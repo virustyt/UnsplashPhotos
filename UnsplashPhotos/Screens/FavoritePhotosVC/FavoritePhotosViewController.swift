@@ -1,5 +1,5 @@
 //
-//  ViewController.swift
+//  FavoritePhotosViewController.swift
 //  UnsplashPhotos
 //
 //  Created by Vladimir Oleinikov on 01.02.2022.
@@ -7,13 +7,11 @@
 
 import UIKit
 
-class ViewController: UIViewController {
+class FavoritePhotosViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
+
+        
     }
-
-
 }
-

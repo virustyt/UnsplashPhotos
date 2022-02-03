@@ -8,33 +8,29 @@
 import UIKit
 
 protocol RandomPhotoViewModelProtocol {
-    func setImage(on imageView: UIImageView, by photoIndex: Int, with imagePlacholder: UIImage?)
     func photosCount() -> Int
-    func getNewPhotos(complition: (() -> ())?)
-    func getPhotosBy(query: String, complition: (() -> ())?)
+    func setNewPhotosByRandom(complition: (() -> ())?)
+    func setNewPhotosBy(query: String, complition: (() -> ())?)
+    func getPhotoBy(index: Int) -> Photo?
 }
 
 class RandomPhotosViewModel: RandomPhotoViewModelProtocol {
-    private let imageClient: ImageClientProtocol = ImageClient.shared
+
     private let manager: PhotoManagerProtocol = PhotoManager.shared
 
-    private var dataTask: URLSessionDataTask?
+    func setNewPhotosByRandom(complition: (() -> ())?) {
+        manager.setNewPhotosByRandom(complition: complition)
+    }
 
-    func setImage(on imageView: UIImageView, by photoIndex: Int, with imagePlacholder: UIImage?) {
-        if let photoImageUrl = manager.getPhotoImageUrlBy(index: photoIndex) {
-            imageClient.setImage(on: imageView, from: photoImageUrl, with: imagePlacholder, complition: nil)
-        }
+    func setNewPhotosBy(query: String, complition: (() -> ())?) {
+        manager.setNewPhotosBy(query: query, complition: complition)
+    }
+
+    func getPhotoBy(index: Int) -> Photo? {
+        manager.getRandomPhotoBy(index: index)
     }
 
     func photosCount() -> Int {
-        manager.getPhotosCount()
-    }
-
-    func getNewPhotos(complition: (() -> ())?) {
-        manager.refreshPhotos(complition: complition)
-    }
-
-    func getPhotosBy(query: String, complition: (() -> ())?) {
-        manager.getPhotosBy(query: query, complition: complition)
+        manager.photos.count
     }
 }

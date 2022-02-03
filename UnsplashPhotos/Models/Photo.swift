@@ -7,7 +7,9 @@
 
 import Foundation
 
-struct PhotosInfo {
+struct Photo {
+    let id: String?
+    let imageUrlAdress: String?
     let name: String?
     let creationDate: String?
     let location: String?

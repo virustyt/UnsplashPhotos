@@ -8,19 +8,23 @@
 import Foundation
 
 protocol PhotoNetClientProtocol {
-    func getRandomPhotos(complition: @escaping ([Photo]?, Error?) -> ()) -> URLSessionDataTask?
-    func getPhotosBy(query: String, complition: @escaping ([Photo]?, Error?) -> ()) -> URLSessionDataTask?
+    func getRandomPhotos(complition: @escaping ([RawPhoto]?, Error?) -> ()) -> URLSessionDataTask?
+    func getPhotosBy(query: String, complition: @escaping ([RawPhoto]?, Error?) -> ()) -> URLSessionDataTask?
 }
 
 class PhotoNetClient: PhotoNetClientProtocol {
-    enum RequestError: Error{
-        case noBaseURLExistsForSpaceXObject(object:Photo)
+    private enum RequestError: Error{
+        case noBaseURLExistsForSpaceXObject(object:RawPhoto)
     }
 
-    private var baseUrls: URL
-    private var urlSession: URLSession
+    private enum RequestType {
+        case random, query
+    }
+
+    private let baseUrls: URL
+    private let urlSession: URLSession
     private var resopnseQueue: DispatchQueue? = nil
-    private var token = "8Yfo8Hd4K71AIAtcQALPua-gEnW5R8tCpVOoPaJkRCk"
+    private let token = "8Yfo8Hd4K71AIAtcQALPua-gEnW5R8tCpVOoPaJkRCk"
 
     static let shared = PhotoNetClient(baseUrls: URL(string: "https://api.unsplash.com/")!,
                                        urlSession: URLSession.shared,
@@ -34,16 +38,16 @@ class PhotoNetClient: PhotoNetClientProtocol {
     }
 
     // MARK: - public funcs
-    func getRandomPhotos(complition: @escaping ([Photo]?, Error?) -> ()) -> URLSessionDataTask? {
-        getPhotos(complition: complition, request: "/photos/random?count=1")
+    func getRandomPhotos(complition: @escaping ([RawPhoto]?, Error?) -> ()) -> URLSessionDataTask? {
+        getPhotos(by: .random, complition: complition, request: "/photos/random?count=1")
     }
 
-    func getPhotosBy(query: String, complition: @escaping ([Photo]?, Error?) -> ()) -> URLSessionDataTask? {
-        getPhotos(complition: complition, request: "/search/photos?page=1&query=\(query)&per_page=1")
+    func getPhotosBy(query: String, complition: @escaping ([RawPhoto]?, Error?) -> ()) -> URLSessionDataTask? {
+        getPhotos(by: .query, complition: complition, request: "/search/photos?page=1&query=\(query)&per_page=1")
     }
 
     // MARK: - private funcs
-    private func getPhotos(complition: @escaping ([Photo]?, Error?) -> (), request: String) -> URLSessionDataTask?  {
+    private func getPhotos(by requestType: RequestType,  complition: @escaping ([RawPhoto]?, Error?) -> (), request: String) -> URLSessionDataTask?  {
         guard let url = URL(string: request, relativeTo: baseUrls) else { return nil}
 
         var request = URLRequest(url: url)
@@ -61,8 +65,14 @@ class PhotoNetClient: PhotoNetClientProtocol {
                 return
             }
             do {
-                let searchPhotosResult = try JSONDecoder().decode(SearchPhotosResult.self, from: recievedData)
-                let photos = searchPhotosResult.results
+                let photos: [RawPhoto]?
+                switch requestType{
+                case .query:
+                    let searchPhotosResult = try JSONDecoder().decode(SearchedRawPhotos.self, from: recievedData)
+                    photos = searchPhotosResult.results
+                case .random:
+                    photos = try JSONDecoder().decode([RawPhoto].self, from: recievedData)
+                }
                 self.dispatchResults(model: photos, complitionHandler: complition)
             } catch {
                 self.dispatchResults(error: error, complitionHandler: complition)

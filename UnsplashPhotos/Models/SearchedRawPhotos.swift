@@ -7,8 +7,8 @@
 
 import Foundation
 
-struct SearchPhotosResult: Codable {
-    let results: [Photo]?
+struct SearchedRawPhotos: Codable {
+    let results: [RawPhoto]?
 
     enum CodingKeys: String, CodingKey {
         case results

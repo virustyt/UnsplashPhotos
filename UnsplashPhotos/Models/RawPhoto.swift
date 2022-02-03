@@ -5,16 +5,9 @@
 //  Created by Vladimir Oleinikov on 01.02.2022.
 //
 
-// Экран подробной информации содержит в себе
-// фотографию,
-// имя автора,
-// дату создания,
-// местоположение
-// и количество скачиваний.
-
 import Foundation
 
-struct Photo: Codable {
+struct RawPhoto: Codable {
     let id: String?
     let urls: Urls?
     let user: User?

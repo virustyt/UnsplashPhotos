@@ -7,7 +7,7 @@
 
 import UIKit
 
-extension Consts {
+fileprivate extension Consts {
 
     static let searchTextFieldTopInset: CGFloat = 10
     static let searchTextFieldLeadingInset: CGFloat = 30
@@ -24,15 +24,16 @@ extension Consts {
 
 class RandomPhotosViewController: BaseViewController {
 
-    private var viewModel: RandomPhotoViewModelProtocol = RandomPhotosViewModel()
+    var viewModel: RandomPhotoViewModelProtocol?
+    var router: RandomPhotosRouterProtocol?
 
     private lazy var collectionView: UICollectionView = {
         let collectionView = UICollectionView(frame: view.frame, collectionViewLayout: UICollectionViewFlowLayout())
         collectionView.delegate = self
         collectionView.dataSource = self
         collectionView.backgroundColor = .clear
-        collectionView.register(RandomPhotoCollectionViewCell.self,
-                                forCellWithReuseIdentifier: RandomPhotoCollectionViewCell.identifyer)
+        collectionView.register(PhotoCollectionViewCell.self,
+                                forCellWithReuseIdentifier: PhotoCollectionViewCell.identifyer)
         return collectionView
     }()
 
@@ -54,20 +55,18 @@ class RandomPhotosViewController: BaseViewController {
     // MARK: - life cycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        setDismissingKeyboardOnTapOfTheView()
         setUpRefreshControl()
         setUpConstraints()
-        setUpNavigationController()
-//        refreshData()
+        refreshData()
     }
 
     // MARK: - private funcs
     @objc private func refreshData(){
-        viewModel
-            .getNewPhotos(complition: { [weak self] in
-                            self?.collectionView.reloadData()
-                            self?.collectionView.refreshControl?.endRefreshing()
-            })
+        viewModel?
+            .setNewPhotosByRandom{ [weak self] in
+                self?.collectionView.reloadData()
+                self?.collectionView.refreshControl?.endRefreshing()
+            }
     }
 
     private func setUpRefreshControl(){
@@ -79,8 +78,8 @@ class RandomPhotosViewController: BaseViewController {
     }
 
     private func setUpConstraints() {
-        self.view.addSubview(collectionView)
-        self.view.addSubview(searchTextField)
+        view.addSubview(collectionView)
+        view.addSubview(searchTextField)
 
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         searchTextField.translatesAutoresizingMaskIntoConstraints = false
@@ -102,35 +101,20 @@ class RandomPhotosViewController: BaseViewController {
                                                    constant: -Consts.collectionViewBottomInset)
         ])
     }
-
-    private func setUpNavigationController() {
-
-    }
-
-    private func setDismissingKeyboardOnTapOfTheView() {
-        let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
-        gestureRecognizer.numberOfTapsRequired = 1
-        self.view.addGestureRecognizer(gestureRecognizer)
-    }
-
-    @objc private func dismissKeyboard() {
-        self.view.endEditing(true)
-    }
 }
 
 // MARK: - UICollectionViewDataSource
 extension RandomPhotosViewController: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        viewModel.photosCount()
+        viewModel?.photosCount() ?? 0
     }
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         guard let cell = collectionView
-                .dequeueReusableCell(withReuseIdentifier: RandomPhotoCollectionViewCell.identifyer,
-                                     for: indexPath) as? RandomPhotoCollectionViewCell
+                .dequeueReusableCell(withReuseIdentifier: PhotoCollectionViewCell.identifyer,
+                                     for: indexPath) as? PhotoCollectionViewCell
         else { return UICollectionViewCell() }
-
-        viewModel.setImage(on: cell.photoImageView, by: indexPath.item, with: R.image.placeholder())
+        cell.photoImageView.setImageFromPhoto(withIndex: indexPath.item, from: .randomList)
 
         return cell
     }
@@ -138,6 +122,11 @@ extension RandomPhotosViewController: UICollectionViewDataSource {
 
 // MARK: - UICollectionViewDelegateFlowLayout
 extension RandomPhotosViewController: UICollectionViewDelegateFlowLayout {
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        let selectedPhoto = viewModel?.getPhotoBy(index: indexPath.item)
+        router?.showPhotoDetailsViewController(for: selectedPhoto)
+    }
+
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let smallestSideOfViewSize = view.frame.width >= view.frame.height ? view.frame.height : view.frame.width
 
@@ -166,10 +155,9 @@ extension RandomPhotosViewController: UICollectionViewDelegateFlowLayout {
 extension RandomPhotosViewController: UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         textField.resignFirstResponder()
-        viewModel.getPhotosBy(query: textField.text ?? "",
-                              complition: { [weak self] in
-                                self?.collectionView.reloadData()
-                              })
+        viewModel?.setNewPhotosBy(query: textField.text ?? "") { [weak self] in
+            self?.collectionView.reloadData()
+        }
         return true
     }
 }

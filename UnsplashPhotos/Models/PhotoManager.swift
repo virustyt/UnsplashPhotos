@@ -8,15 +8,23 @@
 import UIKit
 
 protocol PhotoManagerProtocol {
-    func getPhotosCount() -> Int
-    func getPhotoImageUrlBy(index: Int) -> URL?
-    func getPhotosInfoBy(index: Int) -> PhotosInfo?
-    func refreshPhotos(complition: (() -> ())?)
-    func getPhotosBy(query: String, complition: (() -> ())?)
+    var photos: [RawPhoto] {get}
+    var favouritePhotos: [Photo] {get}
+
+    func setNewPhotosByRandom(complition: (() -> ())?)
+    func setNewPhotosBy(query: String, complition: (() -> ())?)
+
+    func getRandomPhotoBy(index: Int) -> Photo?
+    func getFavouritePhotoBy(index: Int) -> Photo?
+
+    func addToFavourite(photo: Photo)
+    func removeFromFavourite(photo: Photo)
 }
 
 class PhotoManager: PhotoManagerProtocol {
-    private(set) var photos = [Photo]()
+
+    private(set) var photos = [RawPhoto]()
+    private(set) var favouritePhotos = [Photo]()
 
     private let imageNetClient: ImageClientProtocol = ImageClient.shared
     private let photosNetClient: PhotoNetClientProtocol = PhotoNetClient.shared
@@ -29,32 +37,29 @@ class PhotoManager: PhotoManagerProtocol {
     static let shared = PhotoManager()
 
     // MARK: - public funcs
-    func getPhotosCount() -> Int {
-        photos.count
-    }
-
-    func getPhotoImageUrlBy(index: Int) -> URL? {
-        if index > photos.count - 1 {
-            return nil
-        }
-        guard let imageUrl = photos[index].urls?.regular
-        else { return nil }
-        return URL(string: imageUrl)
-    }
-
-    func getPhotosInfoBy(index: Int) -> PhotosInfo? {
+    func getRandomPhotoBy(index: Int) -> Photo? {
         if index > photos.count - 1 {
             return nil
         }
         let photosInfo = photos[index]
         let creationDate = getCreationDate(from: photosInfo.createdAt ?? "")
-        return PhotosInfo(name: photosInfo.user?.name,
-                          creationDate: creationDate,
-                          location: photosInfo.location?.name,
-                          downloadsCount: photosInfo.downloads)
+
+        return Photo(id: photosInfo.id,
+                     imageUrlAdress: photosInfo.urls?.regular,
+                     name: photosInfo.user?.name,
+                     creationDate: creationDate,
+                     location: photosInfo.location?.name,
+                     downloadsCount: photosInfo.downloads)
     }
 
-    func refreshPhotos(complition: (() -> ())?) {
+    func getFavouritePhotoBy(index: Int) -> Photo? {
+        if index > favouritePhotos.count - 1 {
+            return nil
+        }
+        return favouritePhotos[index]
+    }
+
+    func setNewPhotosByRandom(complition: (() -> ())?) {
         guard dataTasks[.getRandomPhotos] == nil else { return }
         dataTasks
             .forEach{
@@ -64,7 +69,10 @@ class PhotoManager: PhotoManagerProtocol {
                 }
             }
         dataTasks[.getRandomPhotos] = photosNetClient.getRandomPhotos { [weak self] recievedPhotos, error in
-            guard let photos = recievedPhotos else { return }
+            // here
+            guard let photos = recievedPhotos else {
+                return
+            }
             self?.photos = photos
             self?.dataTasks[.getRandomPhotos] = nil
             
@@ -74,7 +82,7 @@ class PhotoManager: PhotoManagerProtocol {
         }
     }
 
-    func getPhotosBy(query: String, complition: (() -> ())?) {
+    func setNewPhotosBy(query: String, complition: (() -> ())?) {
         guard dataTasks[.getPhotosByQuery] == nil else { return }
         dataTasks
             .forEach{
@@ -94,11 +102,21 @@ class PhotoManager: PhotoManagerProtocol {
         }
     }
 
+    func addToFavourite(photo: Photo) {
+        if !favouritePhotos.contains(where: { photo.id == $0.id }) {
+            favouritePhotos.append(photo)
+        }
+    }
+
+    func removeFromFavourite(photo: Photo) {
+        favouritePhotos.removeAll(where: { $0.id == photo.id })
+    }
+
     // MARK: - private funcs
     private func getCreationDate(from stringDate: String) -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.locale = Locale(identifier: "UTC")
-        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
         guard let date = dateFormatter.date(from: stringDate) else { return "" }
         dateFormatter.setLocalizedDateFormatFromTemplate("MMMMd, yyyy")
         dateFormatter.locale = Locale.current

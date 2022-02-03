@@ -7,7 +7,7 @@
 
 import UIKit
 
-class RandomPhotoCollectionViewCell: UICollectionViewCell {
+class PhotoCollectionViewCell: UICollectionViewCell {
     static let identifyer: String = String(describing: self)
 
     private(set) lazy var photoImageView: UIImageView = {

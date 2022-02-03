@@ -1,18 +1,17 @@
 //
-//  Router.swift
+//  FavouritePhotosRouter.swift
 //  UnsplashPhotos
 //
-//  Created by Vladimir Oleinikov on 01.02.2022.
+//  Created by Vladimir Oleinikov on 02.02.2022.
 //
 
 import Foundation
 
-protocol RandomPhotosRouterProtocol {
+protocol FavouritePhotosRouterProtocol {
     func showPhotoDetailsViewController(for photo : Photo?)
 }
 
-class RandomPhotosRouter: BaseRouter, RandomPhotosRouterProtocol {
-
+class FavouritePhotosRouter: BaseRouter, FavouritePhotosRouterProtocol {
     func showPhotoDetailsViewController(for photo : Photo?) {
         let photoDetailsViewController = PhotoDetailsViewController()
 

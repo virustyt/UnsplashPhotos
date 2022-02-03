@@ -5,7 +5,7 @@
 //  Created by Vladimir Oleinikov on 02.02.2022.
 //
 
-import UIKit
+import Foundation
 
 protocol PhotoDetailsViewModelProtocol {
     var photoMarkedAsFavourite: Bool { get }

@@ -122,5 +122,4 @@ class PhotoManager: PhotoManagerProtocol {
         dateFormatter.locale = Locale.current
         return dateFormatter.string(from: date)
     }
-
 }
